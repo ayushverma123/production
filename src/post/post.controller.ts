@@ -32,7 +32,7 @@ export class PostsController {
     @UsePipes(new ValidationPipe())
     @Post('create')
     async createPost(@Body() createPostDto: CreatePostDto): Promise<PostInterfaceResponse | null> {
-        return this.postsService.createPost(createPostDto);
+        return this.postsService.createPostWithSteps(createPostDto);
     }
 
     @UsePipes(new ValidationPipe())
