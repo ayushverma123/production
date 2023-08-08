@@ -1,3 +1,5 @@
+import { InternalServerErrorException, ConflictException } from '@nestjs/common/exceptions';
+import { Step } from 'src/entities/step.schema';
 import { CreateStepDto } from './createStep-dto';
 import { StepInterfaceResponse } from './interface/StepResponse.interface';
 import { ValidationPipe } from '@nestjs/common';
@@ -25,6 +27,7 @@ export class PostsController {
     async getPostById(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
         return this.postsService.getPostById(id);
     }
+
 
     @UsePipes(new ValidationPipe())
     @Post('create')
@@ -59,6 +62,20 @@ export class PostsController {
         return this.postsService.getStepById(id);
     }
 
+
+    @Post('steps/create')
+    async createSteps(@Body() steps: Step[]): Promise<{ message: string; createdSteps: Step[] }> {
+        try {
+            const createdSteps = await this.postsService.createSteps(steps);
+            return { message: 'Steps created successfully', createdSteps };
+        } catch (error) {
+            if (error instanceof ConflictException) {
+                throw new ConflictException(error.message);
+            } else {
+                throw new InternalServerErrorException('An error occurred while creating steps');
+            }
+        }
+    }
 
     @Post('steps/create')
     async createStep(@Body() createStepDto: CreateStepDto): Promise<StepInterfaceResponse | null> {
