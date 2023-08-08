@@ -1,3 +1,5 @@
+import { SortOrder } from 'mongoose';
+import { GetQueryDto } from 'src/post/query-dto';
 import { PostInterfaceResponse } from 'src/post/interface/PostResponse.interface';
 import { NotFoundException } from '@nestjs/common';
 import { Model } from 'mongoose';
@@ -11,7 +13,7 @@ import { Controller } from '@nestjs/common';
 
 @Injectable()
 export class GroupService {
-    constructor(@InjectModel('Group') private readonly groupModel: Model<Group>) {}
+    constructor(@InjectModel('Group') private readonly groupModel: Model<Group>) { }
 
 
     async create(createGroupDto: CreateGroupDto): Promise<GroupInterfaceResponse | null> {
@@ -40,6 +42,35 @@ export class GroupService {
 
     async getAllGroups(): Promise<any> {
         return this.groupModel.find();
+    }
+
+
+
+    async getFilteredPosts(queryDto: GetQueryDto): Promise<any> {
+        const { search, limit, pageNumber, pageSize, sortField, sortOrder } = queryDto;
+        const query = this.groupModel.find();
+
+
+        if (search) {
+            query.or([
+                { title: { $regex: search, $options: 'i' } },
+            ]);
+        }
+
+        if (pageNumber && pageSize) {
+            const skip = (pageNumber - 1) * pageSize;
+            query.skip(skip).limit(pageSize);
+        }
+
+        if (sortField && sortOrder) {
+            const sortOptions: [string, SortOrder][] = [[sortField, sortOrder as SortOrder]];
+            query.sort(sortOptions);
+        }
+
+        const data = await query.exec();
+        const totalRecords = await this.groupModel.find(query.getFilter()).countDocuments();
+
+        return { data, totalRecords };
     }
 
 
