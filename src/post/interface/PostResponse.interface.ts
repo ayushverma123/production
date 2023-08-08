@@ -6,4 +6,4 @@ export interface PostInterfaceResponse {
   status: string;
   data: Posts;
 
-} 
+}

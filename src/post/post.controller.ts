@@ -10,6 +10,7 @@ import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/
 import { PostsService } from './post.service';
 import { PostInterfaceResponse } from './interface/PostResponse.interface';
 import { GetQueryDto } from './query-dto';
+import { PostWithStepsResponse } from './interface/PostwithStepResponce.interface';
 
 
 @Controller('posts')
@@ -31,8 +32,8 @@ export class PostsController {
 
     @UsePipes(new ValidationPipe())
     @Post('create')
-    async createPost(@Body() createPostDto: CreatePostDto): Promise<PostInterfaceResponse | null> {
-        return this.postsService.createPost(createPostDto);
+    async createPost(@Body() createPostDto: CreatePostDto): Promise<PostWithStepsResponse | null> {
+        return this.postsService.createPostWithSteps(createPostDto);
     }
 
     @UsePipes(new ValidationPipe())
@@ -50,20 +51,20 @@ export class PostsController {
         return this.postsService.deletePost(id);
     }
 
-//=====================================Step Controller===================================================
+    //=====================================Step Controller===================================================
+
 
     @Get('steps/getall')
     async getSteps(): Promise<any> {
         return this.postsService.getAllSteps();
     }
 
-
+    
     @Get('steps/getbyid/:id')
     async getStepById(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
         return this.postsService.getStepById(id);
     }
-    
-          
+
 
     @Post('steps/createMany')
     async createSteps(@Body() steps: Step[]): Promise<{ message: string; createdSteps: Step[] }> {
@@ -101,4 +102,15 @@ export class PostsController {
     async deleteStep(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
         return this.postsService.deleteStep(id);
     }
+
+    //=============================================Confirm================================================
+
+    @Delete(':postId/delete-steps')
+    async deleteStepsFromPost(
+        @Param('postId') postId: string,
+        @Body() stepIds: string[], // Array of step IDs to delete
+    ): Promise<PostInterfaceResponse> {
+        return this.postsService.deleteStepsFromPost(postId, stepIds);
+    }
+
 }

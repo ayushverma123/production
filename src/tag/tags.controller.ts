@@ -34,7 +34,7 @@ export class TagController {
 
   @UsePipes(new ValidationPipe())
   @Put('updatebyid/:id')
-  async updateGroup(
+  async updateTag(
     @Param('id') id: string,
     @Body() updateTagDto: CreateTagDto,
   ): Promise<TagInterfaceResponse | null> {
