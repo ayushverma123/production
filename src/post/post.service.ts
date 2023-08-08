@@ -1,3 +1,4 @@
+import { PostWithStepsResponse } from './interface/PostwithStepResponce.interface';
 import { BadRequestException, ConflictException } from '@nestjs/common/exceptions';
 import { StepInterfaceResponse } from './interface/StepResponse.interface';
 import { CreateStepDto } from './createStep-dto';
@@ -20,9 +21,9 @@ export class PostsService {
     constructor(@InjectModel('Posts') private readonly postsModel: Model<Posts>,
         @InjectModel('Group') private readonly groupModel: Model<Group>,
         @InjectModel('Tag') private readonly tagModel: Model<Tag>) { }
-        @InjectModel('Step') private readonly stepModel: Model<Step>
+    @InjectModel('Step') private readonly stepModel: Model<Step>
 
-    
+
     /*
     async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
         const { groupId, ...postData } = createPostDto;
@@ -67,43 +68,90 @@ export class PostsService {
         };
     }
 
-*/   
+*/
 
-async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
-    const { groupId, steps, ...postData } = createPostDto; // Extract steps from createPostDto
-    const group = await this.groupModel.findById(groupId);
-    const Tag = await this.tagModel.findOne({ title });
+    /*
     
-    if (!group) {
-        throw new NotFoundException('Invalid groupId');
+    async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
+        const { groupId, steps, ...postData } = createPostDto; // Extract steps from createPostDto
+        const group = await this.groupModel.findById(groupId);
+        const Tag = await this.tagModel.findOne({ title });
+        
+        if (!group) {
+            throw new NotFoundException('Invalid groupId');
+        }
+        
+        const newPostData = {
+            ...postData,
+            group: group.title,
+        };
+        
+        const existingPost = await this.postsModel.findOne({
+            title: createPostDto.title
+        });
+        
+        if (existingPost) {
+            throw new NotFoundException('Post already exists');
+        }
+        
+        // Create the post and associate steps
+        const createdPost = await this.postsModel.create(newPostData);
+        createdPost.steps = steps; // Assign the steps array to the post's steps property
+        await createdPost.save();
+        
+        return {
+            code: 200,
+            message: 'Post created successfully',
+            status: 'success',
+            data: createdPost,
+        };
     }
-    
-    const newPostData = {
-        ...postData,
-        group: group.title,
-    };
-    
-    const existingPost = await this.postsModel.findOne({
-        title: createPostDto.title
-    });
-    
-    if (existingPost) {
-        throw new NotFoundException('Post already exists');
-    }
-    
-    // Create the post and associate steps
-    const createdPost = await this.postsModel.create(newPostData);
-    createdPost.steps = steps; // Assign the steps array to the post's steps property
-    await createdPost.save();
-    
-    return {
-        code: 200,
-        message: 'Post created successfully',
-        status: 'success',
-        data: createdPost,
-    };
-}
+    */
 
+    async createPostWithSteps(createPostDto: CreatePostDto): Promise<PostWithStepsResponse> {
+        const { steps, ...postData } = createPostDto;
+
+        // Fetch the group
+        const group = await this.groupModel.findById(postData.groupId);
+        if (!group) {
+            throw new NotFoundException('Invalid groupId');
+        }
+
+        // Check if the post already exists
+        const existingPost = await this.postsModel.findOne({ title: postData.title });
+        if (existingPost) {
+            throw new NotFoundException('Post already exists');
+        }
+
+        // Create steps and get their IDs
+        const createdSteps = await this.stepModel.create(steps);
+
+        // Create a new post and associate created step IDs
+        const createdPost = await this.postsModel.create({
+            ...postData,
+            steps: createdSteps.map(step => step._id), // Extract step IDs
+            group: group.title,            
+            
+        });
+
+        // Populate step fields and return the created post
+        const populatedSteps = await this.stepModel.find({ _id: { $in: createdSteps.map(step => step._id) } }).select('title description _id');
+
+        return {
+            code: 200,
+            message: 'Post with steps created successfully',
+            status: 'success',
+            data: {
+                ...createdPost.toObject(),
+                steps: populatedSteps
+            },
+        };
+    }
+
+    
+    
+    
+    
 
     async getAllPosts(): Promise<any> {
         return this.postsModel.find();
@@ -201,7 +249,6 @@ async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
     }
 
 
-
     async deletePost(id: string): Promise<PostInterfaceResponse
     > {
         try {
@@ -232,9 +279,9 @@ async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
     }
 
 
-//==========================================Step Api===================================================
+    //==========================================Step Api===================================================
 
-   
+
 
     async createStep(createStepDto: CreateStepDto): Promise<StepInterfaceResponse | null> {
         // Check if a customer with the same email or mobile number already exists
@@ -260,25 +307,25 @@ async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
         }
     }
 
-    
+
     async createSteps(steps: Step[]): Promise<Step[]> {
         if (!steps || steps.length === 0) {
-          throw new BadRequestException('No steps provided');
+            throw new BadRequestException('No steps provided');
         }
-    
+
         const existingSteps = await this.findStepsByTitles(steps.map((step) => step.title));
-    
+
         if (existingSteps.length > 0) {
-          throw new ConflictException('Some steps already exist');
+            throw new ConflictException('Some steps already exist');
         }
-    
+
         return this.stepModel.create(steps);
-      }
-    
-      async findStepsByTitles(titles: string[]): Promise<Step[]> {
+    }
+
+    async findStepsByTitles(titles: string[]): Promise<Step[]> {
         return this.stepModel.find({ title: { $in: titles } }).exec();
-      }
-    
+    }
+
 
     async getAllSteps(): Promise<any> {
         return this.stepModel.find();
@@ -374,7 +421,37 @@ async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
         }
     }
 
+    //============================================Confirm===============================================
+
+
+
+    async deleteStepsFromPost(postId: string, stepIds: string[]): Promise<PostInterfaceResponse> {
+        // Find the post
+        const post = await this.postsModel.findById(postId);
+
+        if (!post) {
+            throw new NotFoundException('Post not found');
+        }
+
+        // Remove the specified step IDs from the post's steps array
+        post.steps = post.steps.filter(stepId => !stepIds.includes(stepId.toHexString()));
+
+        // Save the modified post
+        await post.save();
+
+        return {
+            code: 200,
+            message: 'Steps deleted from post successfully',
+            status: 'success',
+            data: post,
+        };
+    }
+
+
 }
+
+
+
 
 
 

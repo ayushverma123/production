@@ -17,12 +17,12 @@ export class CreatePostDto {
     @IsNotEmpty()
     groupId: ObjectId;
 
-    @IsString()
-    @IsOptional()
-    tag: string;
-
-    @IsMongoId({ each: true }) // Validate each element in the array as a MongoDB ID
     @IsString({ each: true }) // Validate each element as a string
+    @IsOptional()
+    tag: string[];
+
+   // @IsMongoId({ each: true }) // Validate each element in the array as a MongoDB ID
+   // @IsString({ each: true }) // Validate each element as a string
     @IsOptional()
     steps: ObjectId[];
 
