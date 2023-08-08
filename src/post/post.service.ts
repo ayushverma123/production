@@ -22,6 +22,8 @@ export class PostsService {
         @InjectModel('Tag') private readonly tagModel: Model<Tag>) { }
         @InjectModel('Step') private readonly stepModel: Model<Step>
 
+    
+    /*
     async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
         const { groupId, ...postData } = createPostDto;
         const group = await this.groupModel.findById(groupId);
@@ -32,7 +34,7 @@ export class PostsService {
        /*if(!Tag)
         {
             throw new NotFoundException('Title does not exist')
-        }   */
+        }   
         const newPostData = {
             ...postData,
             //groupId: group._id,
@@ -64,6 +66,43 @@ export class PostsService {
             data: createdPost,
         };
     }
+
+*/   
+
+async createPost(createPostDto: CreatePostDto): Promise<PostInterfaceResponse> {
+    const { groupId, steps, ...postData } = createPostDto; // Extract steps from createPostDto
+    const group = await this.groupModel.findById(groupId);
+    const Tag = await this.tagModel.findOne({ title });
+    
+    if (!group) {
+        throw new NotFoundException('Invalid groupId');
+    }
+    
+    const newPostData = {
+        ...postData,
+        group: group.title,
+    };
+    
+    const existingPost = await this.postsModel.findOne({
+        title: createPostDto.title
+    });
+    
+    if (existingPost) {
+        throw new NotFoundException('Post already exists');
+    }
+    
+    // Create the post and associate steps
+    const createdPost = await this.postsModel.create(newPostData);
+    createdPost.steps = steps; // Assign the steps array to the post's steps property
+    await createdPost.save();
+    
+    return {
+        code: 200,
+        message: 'Post created successfully',
+        status: 'success',
+        data: createdPost,
+    };
+}
 
 
     async getAllPosts(): Promise<any> {
