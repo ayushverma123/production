@@ -113,4 +113,6 @@ export class PostsController {
         return this.postsService.deleteStepsFromPost(postId, stepIds);
     }
 
+}
+
 
