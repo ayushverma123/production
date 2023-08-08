@@ -1,3 +1,5 @@
+import { GetQueryDto } from 'src/post/query-dto';
+import { SortOrder } from 'mongoose';
 import { Tag } from 'src/entities/tag.schema';
 import { PostInterfaceResponse } from 'src/post/interface/PostResponse.interface';
 import { TagInterfaceResponse } from './interface/TagResponse.interface';
@@ -13,7 +15,7 @@ import { Controller } from '@nestjs/common';
 
 @Injectable()
 export class TagService {
-    constructor(@InjectModel('Tag') private readonly tagModel: Model<Tag>) {}
+    constructor(@InjectModel('Tag') private readonly tagModel: Model<Tag>) { }
 
 
     async create(createTagDto: CreateTagDto): Promise<TagInterfaceResponse | null> {
@@ -42,7 +44,6 @@ export class TagService {
 
 
 
-    
     async getAllTags(): Promise<any> {
         return this.tagModel.find();
     }
@@ -75,6 +76,37 @@ export class TagService {
             throw error;
         }
     }
+
+
+
+    async getFilteredTags(queryDto: GetQueryDto): Promise<any> {
+        const { search, limit, pageNumber, pageSize, sortField, sortOrder } = queryDto;
+        const query = this.tagModel.find();
+
+
+        if (search) {
+            query.or([
+                { title: { $regex: search, $options: 'i' } },
+
+            ]);
+        }
+
+        if (pageNumber && pageSize) {
+            const skip = (pageNumber - 1) * pageSize;
+            query.skip(skip).limit(pageSize);
+        }
+
+        if (sortField && sortOrder) {
+            const sortOptions: [string, SortOrder][] = [[sortField, sortOrder as SortOrder]];
+            query.sort(sortOptions);
+        }
+
+        const data = await query.exec();
+        const totalRecords = await this.tagModel.find(query.getFilter()).countDocuments();
+
+        return { data, totalRecords };
+    }
+
 
 
     async updateGroup(id: string, updateTagDto: CreateTagDto): Promise<TagInterfaceResponse> {

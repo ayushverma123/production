@@ -1,8 +1,9 @@
+import { GetQueryDto } from 'src/post/query-dto';
 import { UsePipes } from '@nestjs/common'
 import { ValidationPipe } from '@nestjs/common/pipes';
 import { TagService } from './tags.service';
 import { CreateTagDto } from './createTag-dto';
-import { Post, Body, Get, Put, Param, Delete } from '@nestjs/common';
+import { Post, Body, Get, Put, Param, Delete, Query } from '@nestjs/common';
 import { Controller } from '@nestjs/common';
 import { Tag } from 'src/entities/tag.schema';
 import { TagInterfaceResponse } from './interface/TagResponse.interface';
@@ -21,10 +22,9 @@ export class TagController {
 
 
   @Get('getall')
-  async getTags(): Promise<any> {
-    return this.tagService.getAllTags();
-  }
-
+    async getTags(@Query() queryDto: GetQueryDto): Promise<any> {
+        return this.tagService.getFilteredTags(queryDto);
+    }
 
   @Get('getbyid/:id')
   async gettagById(@Param('id') id: string): Promise<TagInterfaceResponse | null> {

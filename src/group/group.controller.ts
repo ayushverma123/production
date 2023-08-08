@@ -1,7 +1,8 @@
+import { GetQueryDto } from 'src/post/query-dto';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { UsePipes } from '@nestjs/common/decorators';
 import { CreateGroupDto } from './createGroup-dto';
-import { Post, Body, Get, Put, Delete, Param } from '@nestjs/common';
+import { Post, Body, Get, Put, Delete, Query, Param } from '@nestjs/common';
 import { Controller } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { Group } from 'src/entities/group.schema';
@@ -20,8 +21,8 @@ export class GroupController {
 
 
   @Get('getall')
-  async getPosts(): Promise<any> {
-    return this.groupService.getAllGroups();
+  async getGroups(@Query() queryDto: GetQueryDto): Promise<any> {
+    return this.groupService.getFilteredPosts(queryDto);
   }
 
 
