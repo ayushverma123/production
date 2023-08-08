@@ -1,3 +1,4 @@
+import { BadRequestException, ConflictException } from '@nestjs/common/exceptions';
 import { StepInterfaceResponse } from './interface/StepResponse.interface';
 import { CreateStepDto } from './createStep-dto';
 import { Step } from 'src/entities/step.schema';
@@ -219,6 +220,26 @@ export class PostsService {
             data: createdStep,
         }
     }
+
+    
+    async createSteps(steps: Step[]): Promise<Step[]> {
+        if (!steps || steps.length === 0) {
+          throw new BadRequestException('No steps provided');
+        }
+    
+        const existingSteps = await this.findStepsByTitles(steps.map((step) => step.title));
+    
+        if (existingSteps.length > 0) {
+          throw new ConflictException('Some steps already exist');
+        }
+    
+        return this.stepModel.create(steps);
+      }
+    
+      async findStepsByTitles(titles: string[]): Promise<Step[]> {
+        return this.stepModel.find({ title: { $in: titles } }).exec();
+      }
+    
 
     async getAllSteps(): Promise<any> {
         return this.stepModel.find();
