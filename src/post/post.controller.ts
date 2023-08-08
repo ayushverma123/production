@@ -24,14 +24,14 @@ export class PostsController {
 
 
     @Get('getbyid/:id')
-    async getPostById(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
+    async getPostById(@Param('id') id: string): Promise<PostInterfaceResponse | null> {
         return this.postsService.getPostById(id);
     }
 
 
     @UsePipes(new ValidationPipe())
     @Post('create')
-    async createPost(@Body() createPostDto: CreatePostDto): Promise<StepInterfaceResponse | null> {
+    async createPost(@Body() createPostDto: CreatePostDto): Promise<PostInterfaceResponse | null> {
         return this.postsService.createPost(createPostDto);
     }
 
@@ -46,10 +46,11 @@ export class PostsController {
 
 
     @Delete('deletebyid/:id')
-    async deletePost(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
+    async deletePost(@Param('id') id: string): Promise<PostInterfaceResponse | null> {
         return this.postsService.deletePost(id);
     }
 
+//=====================================Step Controller===================================================
 
     @Get('steps/getall')
     async getSteps(): Promise<any> {
@@ -61,9 +62,10 @@ export class PostsController {
     async getStepById(@Param('id') id: string): Promise<StepInterfaceResponse | null> {
         return this.postsService.getStepById(id);
     }
+    
+          
 
-
-    @Post('steps/create')
+    @Post('steps/createMany')
     async createSteps(@Body() steps: Step[]): Promise<{ message: string; createdSteps: Step[] }> {
         try {
             const createdSteps = await this.postsService.createSteps(steps);
@@ -77,10 +79,13 @@ export class PostsController {
         }
     }
 
+    
+
     @Post('steps/create')
     async createStep(@Body() createStepDto: CreateStepDto): Promise<StepInterfaceResponse | null> {
         return this.postsService.createStep(createStepDto);
     }
+
 
     @UsePipes(new ValidationPipe())
     @Put('steps/updatebyid/:id')
