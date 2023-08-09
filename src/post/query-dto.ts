@@ -6,6 +6,14 @@ export class GetQueryDto {
     @IsOptional()
     search?: string;
 
+    @IsString()
+    @IsOptional()
+    group?: string;
+
+    @IsString()
+    @IsOptional()
+    tag?: string;
+
     @IsNumber()
     @IsOptional()
     limit?: number;
