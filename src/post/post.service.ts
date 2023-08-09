@@ -109,7 +109,7 @@ export class PostsService {
     */
 
     async createPostWithSteps(createPostDto: CreatePostDto): Promise<PostWithStepsResponse> {
-        const { steps, tag, ...postData } = createPostDto;
+        const { steps, ...postData } = createPostDto;
 
         // Fetch the group
         const group = await this.groupModel.findById(postData.groupId);
@@ -134,7 +134,6 @@ export class PostsService {
                 title: step.title,
                 description: step.description,
             })), // Map each step's properties
-            tags: tag, // Use the 'tags' array directly
             group: group.title,
         });
 
