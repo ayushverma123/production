@@ -109,7 +109,7 @@ export class PostsService {
     */
 
     async createPostWithSteps(createPostDto: CreatePostDto): Promise<PostWithStepsResponse> {
-        const { steps, ...postData } = createPostDto;
+        const { steps, tag, ...postData } = createPostDto;
 
         // Fetch the group
         const group = await this.groupModel.findById(postData.groupId);
@@ -123,35 +123,35 @@ export class PostsService {
             throw new NotFoundException('Post already exists');
         }
 
-        // Create steps and get their IDs
+        // Create steps and get their IDs, titles, and descriptions
         const createdSteps = await this.stepModel.create(steps);
 
-        // Create a new post and associate created step IDs
+        // Create a new post and associate created step IDs, titles, and descriptions
         const createdPost = await this.postsModel.create({
             ...postData,
-            steps: createdSteps.map(step => step._id), // Extract step IDs
-            group: group.title,            
-            
+            steps: createdSteps.map(step => ({
+                _id: step._id,
+                title: step.title,
+                description: step.description,
+            })), // Map each step's properties
+            tags: tag, // Use the 'tags' array directly
+            group: group.title,
         });
 
         // Populate step fields and return the created post
-        const populatedSteps = await this.stepModel.find({ _id: { $in: createdSteps.map(step => step._id) } }).select('title description _id');
+        const populatedSteps = await this.stepModel.find({ _id: { $in: createdSteps.map(step => step._id) } });
 
         return {
             code: 200,
-            message: 'Post with steps created successfully',
+            message: 'Post with steps and tags created successfully',
             status: 'success',
             data: {
                 ...createdPost.toObject(),
-                steps: populatedSteps
+                steps: populatedSteps,
             },
         };
     }
 
-    
-    
-    
-    
 
     async getAllPosts(): Promise<any> {
         return this.postsModel.find();
@@ -159,7 +159,7 @@ export class PostsService {
 
 
     async getFilteredPosts(queryDto: GetQueryDto): Promise<any> {
-        const { search, limit, pageNumber, pageSize, sortField, sortOrder } = queryDto;
+        const { search, group, tag ,limit, pageNumber, pageSize, sortField, sortOrder } = queryDto;
         const query = this.postsModel.find();
 
 
@@ -173,6 +173,14 @@ export class PostsService {
             ]);
         }
 
+        if (tag && Array.isArray(tag) && tag.length > 0) {
+            query.or([{ tag: { $in: tag.map(tag => new RegExp(tag, 'i')) } }]);
+        }
+    
+        if (group && Array.isArray(group) && group.length > 0) {
+            query.or([{ group: { $in: group.map(grp => new RegExp(grp, 'i')) } }]);
+        }
+
         if (pageNumber && pageSize) {
             const skip = (pageNumber - 1) * pageSize;
             query.skip(skip).limit(pageSize);
@@ -183,23 +191,60 @@ export class PostsService {
             query.sort(sortOptions);
         }
 
+        query.populate({
+            path: 'steps',
+            select: 'title description _id', // Select the fields you want to populate
+        });
+
         const data = await query.exec();
         const totalRecords = await this.postsModel.find(query.getFilter()).countDocuments();
 
         return { data, totalRecords };
     }
 
-
+    /*
+        async getPostById(id: string): Promise<PostInterfaceResponse> {
+            try {
+                const FoundPost = await this.postsModel.findById(id).exec();
+    
+                if (!FoundPost) {
+                    throw new NotFoundException('Unable to find post');
+                }
+                else {
+    
+                    return {
+                        code: 200,
+                        message: 'Post found successfully',
+                        status: 'success',
+                        data: FoundPost,
+                    };
+                }
+            }
+            catch (error) {
+                // Handle the specific CastError here
+                if (error) {
+                    throw new NotFoundException('Invalid Post ID');
+                }
+    
+                // Handle other potential errors or rethrow them
+                throw error;
+            }
+        }
+        
+        */
 
     async getPostById(id: string): Promise<PostInterfaceResponse> {
         try {
-            const FoundPost = await this.postsModel.findById(id).exec();
+            const FoundPost = await this.postsModel.findById(id)
+                .populate({
+                    path: 'steps',
+                    select: 'title description _id', // Select the fields you want to populate
+                })
+                .exec();
 
             if (!FoundPost) {
                 throw new NotFoundException('Unable to find post');
-            }
-            else {
-
+            } else {
                 return {
                     code: 200,
                     message: 'Post found successfully',
@@ -207,8 +252,7 @@ export class PostsService {
                     data: FoundPost,
                 };
             }
-        }
-        catch (error) {
+        } catch (error) {
             // Handle the specific CastError here
             if (error) {
                 throw new NotFoundException('Invalid Post ID');
@@ -218,6 +262,9 @@ export class PostsService {
             throw error;
         }
     }
+
+
+
 
 
     async updatePost(id: string, updatePostDto: CreatePostDto): Promise<PostInterfaceResponse> {
