@@ -108,24 +108,29 @@ export class PostsService {
     }
     */
 
+  
     async createPostWithSteps(createPostDto: CreatePostDto): Promise<PostWithStepsResponse> {
         const { steps, ...postData } = createPostDto;
-
+    
         // Fetch the group
         const group = await this.groupModel.findById(postData.groupId);
         if (!group) {
             throw new NotFoundException('Invalid groupId');
         }
-
+    
         // Check if the post already exists
         const existingPost = await this.postsModel.findOne({ title: postData.title });
         if (existingPost) {
             throw new NotFoundException('Post already exists');
         }
-
-        // Create steps and get their IDs, titles, and descriptions
-        const createdSteps = await this.stepModel.create(steps);
-
+    
+        let createdSteps = [];
+    
+        if (steps && steps.length > 0) {
+            // Create steps and get their IDs, titles, and descriptions
+            createdSteps = await this.stepModel.create(steps);
+        }
+    
         // Create a new post and associate created step IDs, titles, and descriptions
         const createdPost = await this.postsModel.create({
             ...postData,
@@ -134,12 +139,13 @@ export class PostsService {
                 title: step.title,
                 description: step.description,
             })), // Map each step's properties
+            // Use the 'tags' array directly
             group: group.title,
         });
-
+    
         // Populate step fields and return the created post
         const populatedSteps = await this.stepModel.find({ _id: { $in: createdSteps.map(step => step._id) } });
-
+    
         return {
             code: 200,
             message: 'Post with steps and tags created successfully',
