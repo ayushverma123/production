@@ -12,7 +12,7 @@ import { PostInterfaceResponse } from './interface/PostResponse.interface';
 import { GetQueryDto } from './query-dto';
 import { PostWithStepsResponse } from './interface/PostwithStepResponce.interface';
 
-
+           
 @Controller('posts')
 export class PostsController {
     constructor(private readonly postsService: PostsService) { }
@@ -32,8 +32,8 @@ export class PostsController {
 
     @UsePipes(new ValidationPipe())
     @Post('create')
-    async createPost(@Body() createPostDto: CreatePostDto): Promise<PostWithStepsResponse | null> {
-        return this.postsService.createPostWithSteps(createPostDto);
+    async createPost(@Body() createPostDto: CreatePostDto): Promise<PostInterfaceResponse | null> {
+        return this.postsService.createPost(createPostDto);
     }
 
     @UsePipes(new ValidationPipe())
