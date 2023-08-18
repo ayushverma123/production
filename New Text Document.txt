@@ -1,4 +1,0 @@
-there will be a role in customer and
-only those customer whose role is admin can modify hotel(crud)
-use role guard also.
-
